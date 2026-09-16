@@ -34,6 +34,11 @@ public class ProductoController {
         return productoService.buscarPorId(id);
     }
 
+    @GetMapping("/nombre/{nombre}")
+    public Producto buscarPorNombre(@PathVariable String nombre) {
+        return productoService.buscarPorNombre(nombre);
+    }
+
     @PostMapping
     public ResponseEntity<Producto> crear(@Valid @RequestBody Producto producto) {
         Producto productoCreado = productoService.crear(producto);
