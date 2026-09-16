@@ -23,7 +23,7 @@ public class ProductoService {
 
     @Transactional(readOnly = true)
     public List<Producto> listarActivos() {
-        return productoRepository.findByActivoTrue();
+        return productoRepository.findByActivoTrueOrderByNombreAsc();
     }
 
     @Transactional(readOnly = true)
