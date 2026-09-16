@@ -27,6 +27,11 @@ public class ProductoService {
     }
 
     @Transactional(readOnly = true)
+    public List<Producto> listarPorCategoria(String categoria) {
+        return productoRepository.findByCategoriaIgnoreCaseAndActivoTrue(categoria);
+    }
+
+    @Transactional(readOnly = true)
     public Producto buscarPorId(Long id) {
         return productoRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("No se encontró el producto con id " + id));
