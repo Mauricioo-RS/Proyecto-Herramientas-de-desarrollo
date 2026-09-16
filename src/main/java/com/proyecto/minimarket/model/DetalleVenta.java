@@ -32,4 +32,7 @@ public class DetalleVenta {
     public void setPrecioUnitario(Double precioUnitario) {
         this.precioUnitario = precioUnitario;
     }
+
+    public void setSubtotal(double subtotal) {
+    }
 }

@@ -1,13 +1,12 @@
 package com.proyecto.minimarket.service;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.proyecto.minimarket.model.DetalleVenta;
+import com.proyecto.minimarket.repository.DetalleVentaRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.proyecto.minimarket.model.DetalleVenta;
-import com.proyecto.minimarket.repository.DetalleVentaRepository;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 public class DetalleVentaService {
@@ -23,8 +22,14 @@ public class DetalleVentaService {
         return detalleVentaRepository.findById(id);
     }
 
-    public DetalleVenta guardarDetalle(DetalleVenta detalleVenta) {
-        return detalleVentaRepository.save(detalleVenta);
+    public DetalleVenta guardarDetalle(DetalleVenta detalle) {
+        if (detalle != null) {
+            // Se calcula el subtotal multiplicando cantidad por precio unitario
+            double subtotal = detalle.getCantidad() * detalle.getPrecioUnitario();
+            detalle.setSubtotal(subtotal);
+            return detalleVentaRepository.save(detalle);
+        }
+        return null;
     }
 
     public void eliminarDetalle(Long id) {
