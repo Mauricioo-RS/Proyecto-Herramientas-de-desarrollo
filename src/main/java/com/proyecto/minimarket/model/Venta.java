@@ -1,7 +1,9 @@
 package com.proyecto.minimarket.model;
 
 import java.time.LocalDateTime;
+import java.math.BigDecimal;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -14,7 +16,13 @@ public class Venta {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "venta_id")
     private List<DetalleVenta> detalles;
-    private Double total;
+    @Column(precision = 19, scale = 2)
+    private BigDecimal total;
+
+    // Las ventas anteriores a esta lógica no descontaron existencias.
+    @JsonIgnore
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean stockDescontado;
 
     public Venta() {}
 
@@ -42,11 +50,20 @@ public class Venta {
         this.detalles = detalles;
     }
 
-    public Double getTotal() {
+    public BigDecimal getTotal() {
         return total;
     }
 
-    public void setTotal(Double total) {
+    public void setTotal(BigDecimal total) {
         this.total = total;
+    }
+
+    @JsonIgnore
+    public boolean isStockDescontado() {
+        return stockDescontado;
+    }
+
+    public void registrarDescuentoStock() {
+        this.stockDescontado = true;
     }
 }
