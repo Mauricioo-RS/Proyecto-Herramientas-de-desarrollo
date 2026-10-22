@@ -57,10 +57,53 @@ La actualización conserva el DNI original del cliente.
 
 ## Validación y flujo de trabajo
 
+### Registrar una venta
+
+En Postman utiliza `POST http://localhost:8080/api/ventas`, Body → raw → JSON:
+
+```json
+{
+  "detalles": [
+    {"producto": {"id": 1}, "cantidad": 2}
+  ]
+}
+```
+
+La API toma el precio del catálogo, calcula los subtotales y el total con
+importes decimales, descuenta las unidades y devuelve `201` con los datos
+completos del producto. Si no envías fecha, usa la fecha del servidor.
+Los importes enviados por el cliente se reemplazan por los calculados.
+No envíes ID de venta ni ID de detalle para crear registros nuevos.
+
+Con precio 5.00 y stock 30, vender dos unidades genera un total de 10.00
+y deja stock 28. Repite `GET /api/productos/1` para comprobarlo.
+
+- Cantidad no positiva, producto sin ID o venta sin detalles: `400`.
+- Producto inexistente: `404`.
+- Stock insuficiente o producto desactivado: `409`, con una explicación
+  en el campo `detail` de la respuesta.
+- Si falla cualquier detalle, se revierte toda la venta y su descuento de stock.
+- Las ventas simultáneas bloquean los productos durante la operación para
+  evitar vender más existencias de las disponibles.
+
+`DELETE /api/ventas/{id}` elimina la venta y sus detalles y devuelve el stock
+que descontó esa venta. Un segundo DELETE devuelve `404`.
+Las ventas creadas con la versión anterior se conservan sin descontar stock
+retroactivamente; tampoco devuelven stock al eliminarlas, porque nunca lo
+descontaron. El esquema H2 se actualiza al reiniciar la aplicación.
+
+`POST /api/detalle-ventas` mantiene la creación de detalles independientes:
+calcula sus importes y carga el producto, pero no representa una venta ni
+descuenta inventario. Para registrar una venta completa usa `/api/ventas`.
+
+### Ejecutar las pruebas
+
 `./mvnw clean verify` (en Windows, `.\mvnw.cmd clean verify`) compila,
 ejecuta las pruebas y genera el JAR. Las pruebas HTTP comprueban productos,
 ventas y detalles, además del ciclo de creación, consulta, actualización y
-eliminación de clientes y el rechazo de un DNI inválido.
+eliminación de clientes y el rechazo de un DNI inválido. También verifican
+importes, descuentos y restitución de stock, ventas simultáneas, reversión
+de operaciones rechazadas y compatibilidad con la base H2 anterior.
 
 Las funcionalidades se integran en `develop`; la versión comprobada se lleva
 a `main`. Las ramas de funcionalidades anteriores se conservan como historial.

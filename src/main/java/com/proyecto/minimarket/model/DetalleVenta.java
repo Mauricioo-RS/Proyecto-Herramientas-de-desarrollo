@@ -1,6 +1,7 @@
 package com.proyecto.minimarket.model;
 
 import com.proyecto.minimarket.productos.Producto;
+import java.math.BigDecimal;
 import jakarta.persistence.*;
 
 @Entity
@@ -13,8 +14,10 @@ public class DetalleVenta {
     @JoinColumn(name = "producto_id", nullable = false)
     private Producto producto;
     private int cantidad;
-    private Double precioUnitario;
-    private Double subtotal;
+    @Column(precision = 10, scale = 2)
+    private BigDecimal precioUnitario;
+    @Column(precision = 19, scale = 2)
+    private BigDecimal subtotal;
 
     public DetalleVenta() {}
 
@@ -36,18 +39,18 @@ public class DetalleVenta {
     public void setCantidad(int cantidad) {
         this.cantidad = cantidad;
     }
-    public Double getPrecioUnitario() {
+    public BigDecimal getPrecioUnitario() {
         return precioUnitario;
     }
-    public void setPrecioUnitario(Double precioUnitario) {
+    public void setPrecioUnitario(BigDecimal precioUnitario) {
         this.precioUnitario = precioUnitario;
     }
 
-    public void setSubtotal(double subtotal) {
+    public void setSubtotal(BigDecimal subtotal) {
         this.subtotal = subtotal;
     }
 
-    public Double getSubtotal() {
+    public BigDecimal getSubtotal() {
         return subtotal;
     }
 }
