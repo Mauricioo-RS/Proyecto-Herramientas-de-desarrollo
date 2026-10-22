@@ -110,7 +110,93 @@ a `main`. Las ramas de funcionalidades anteriores se conservan como historial.
 Para trabajo nuevo, crea una rama desde `develop` actualizado y abre un PR
 hacia `develop` al terminar.
 
-Docker y GitHub Actions siguen pendientes. Las pruebas actuales verifican la
-integración básica, no todas las reglas de negocio del minimarket.
+GitHub Actions sigue pendiente. Las pruebas actuales verifican la
+integración y el control de inventario, no todas las reglas de negocio del minimarket.
 La guía Word en `docs/` describe el estado anterior a la integración de clientes;
 las rutas y el estado actualizado se encuentran en este README.
+
+## Ejecutar con Docker y MySQL
+
+Requisito: Docker Desktop iniciado con contenedores Linux y Docker Compose.
+El proyecto define dos servicios: `app` (Spring Boot con Java 21) y `db`
+(MySQL 8.4). La aplicación espera hasta que MySQL esté disponible.
+
+En una copia nueva del repositorio, prepara la configuración local en PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Edita `.env` para definir `MYSQL_PASSWORD` y `MYSQL_ROOT_PASSWORD`.
+Si ya existe `.env`, usa ese archivo. El archivo está excluido de Git y de
+la imagen. Las claves de ejemplo son únicamente para desarrollo local.
+
+Desde la carpeta del proyecto:
+
+```powershell
+docker compose up -d --build --wait --wait-timeout 300
+docker compose ps
+```
+
+La construcción ejecuta las pruebas de Maven antes de generar la imagen final.
+El primer arranque descarga Java, MySQL y las dependencias y puede tardar varios
+minutos. Ambos servicios deben aparecer como `healthy`.
+
+### Probar en Postman
+
+La API de Docker está en **http://localhost:8081**. `APP_PORT` en `.env` controla
+este puerto; dentro del contenedor, Java escucha en 8080.
+Selecciona el método en el desplegable y pega solo la URL en el campo de dirección.
+
+| Método | URL para Docker |
+| --- | --- |
+| GET | `http://localhost:8081/api/productos` |
+| GET | `http://localhost:8081/api/ventas` |
+| GET | `http://localhost:8081/api/detalle-ventas` |
+| GET | `http://localhost:8081/api/v1/clientes` |
+
+Para crear o modificar registros, usa las mismas rutas y cuerpos JSON de los
+ejemplos anteriores, cambiando el puerto a 8081. La ejecución directa con Maven
+usa H2 en `data/` y el puerto 8080. Docker usa una base MySQL distinta: los datos
+de H2 no se copian automáticamente. Usa los IDs que devuelvan tus nuevos POST.
+
+### Datos y comandos útiles
+
+MySQL conserva sus datos en el volumen `minimarket_mysql_data`. Se puede ver
+en Docker Desktop → Volumes. Los servicios `app` y `db` aparecen agrupados bajo
+`minimarket` en Containers. MySQL se comunica con la API por la red interna de
+Compose y no publica un puerto de base de datos en tu computadora.
+
+```powershell
+docker compose logs --tail 50 app
+docker compose logs --tail 50 db
+docker compose stop
+docker compose start --wait
+```
+
+`docker compose down` elimina los contenedores y conserva el volumen.
+`docker compose down -v` también elimina los datos de MySQL: no lo uses si quieres
+conservarlos. Las claves de `.env` se usan al crear la base por primera vez;
+cambiarlas en el archivo no modifica las cuentas de un volumen ya inicializado.
+
+### Comprobación automática del despliegue
+
+Con Python instalado y los contenedores iniciados:
+
+```powershell
+python scripts/probar_docker.py
+```
+
+El script comprueba productos, clientes, ventas y detalles, el cálculo del precio,
+el descuento de stock, las respuestas 409/400 y la restitución al eliminar la
+venta de prueba. Genera datos propios, elimina su cliente y venta y desactiva
+su producto al terminar.
+
+Para comprobar también que los datos sobreviven a un reinicio:
+
+```powershell
+python scripts/probar_docker.py --guardar target/docker-prueba.json
+docker compose stop
+docker compose start --wait
+python scripts/probar_docker.py --verificar target/docker-prueba.json
+```
