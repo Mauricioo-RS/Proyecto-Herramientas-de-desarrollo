@@ -74,7 +74,7 @@ jobs:
       - name: Reiniciar y comprobar la persistencia
         run: |
           docker compose stop
-          docker compose start --wait --wait-timeout 180
+          docker compose up -d --no-recreate --wait --wait-timeout 180
           python3 scripts/probar_docker.py --url http://127.0.0.1:8081 --verificar target/ci-estado.json
 
       - name: Recoger los logs de Docker
@@ -86,7 +86,7 @@ jobs:
 
       - name: Guardar los informes de pruebas y el JAR
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: verificacion-minimarket
           path: |

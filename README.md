@@ -1,5 +1,17 @@
 # Proyecto-Herramientas-de-desarrollo
 
+## Documentos para el equipo
+
+- [Avances del proyecto](docs/01_Avances_Minimarket.docx): módulos integrados,
+  Docker, MySQL, pruebas realizadas y funcionamiento del workflow.
+- [Pendientes para el equipo](docs/02_Pendientes_Equipo_Minimarket.docx): reparto
+  sugerido de tareas, puesta en marcha en otra PC, colección Postman y entrega
+  mediante Gitflow hacia `main`.
+
+Ambos documentos corresponden a la entrega del 22 de octubre de 2026. La guía
+`docs/Guia_Minimarket_APIs_Postman_Docker_Gitflow.docx` se conserva como material
+anterior; para el estado actual utiliza los dos documentos nuevos y este README.
+
 ## Ejecución local
 
 Requisitos: JDK 21. Maven se ejecuta mediante el wrapper incluido.
@@ -221,7 +233,7 @@ aplicación ya se prepararon en el volumen de la práctica.
 docker compose logs --tail 50 app
 docker compose logs --tail 50 db
 docker compose stop
-docker compose start --wait
+docker compose up -d --wait
 ```
 
 `docker compose down` elimina los contenedores y conserva el volumen.
@@ -248,6 +260,6 @@ Para comprobar también que los datos sobreviven a un reinicio:
 ```powershell
 python scripts/probar_docker.py --guardar target/docker-prueba.json
 docker compose stop
-docker compose start --wait
+docker compose up -d --wait
 python scripts/probar_docker.py --verificar target/docker-prueba.json
 ```
