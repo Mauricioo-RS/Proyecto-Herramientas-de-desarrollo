@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Datos locales y herramientas del editor ###
+/data/
+/.bloop/
+/.metals/
