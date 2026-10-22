@@ -3,12 +3,15 @@ name: minimarket
 services:
   db:
     image: mysql:8.4
+    container_name: ${DB_CONTAINER_NAME:-minimarket-mysql}
     environment:
       MYSQL_DATABASE: minimarket
       MYSQL_USER: minimarket
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?Define MYSQL_PASSWORD en .env}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en .env}
       TZ: America/Lima
+    ports:
+      - "127.0.0.1:${DB_PORT:-13306}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
@@ -22,7 +25,7 @@ services:
   app:
     build:
       context: .
-    image: minimarket-app:local
+    image: ${APP_IMAGE:-minimarket-app:local}
     environment:
       SPRING_PROFILES_ACTIVE: docker
       DB_USERNAME: minimarket
@@ -43,3 +46,5 @@ services:
 
 volumes:
   mysql_data:
+    name: ${MYSQL_VOLUME_NAME:-minimarket_mysql_data}
+    external: ${MYSQL_VOLUME_EXTERNAL:-false}
