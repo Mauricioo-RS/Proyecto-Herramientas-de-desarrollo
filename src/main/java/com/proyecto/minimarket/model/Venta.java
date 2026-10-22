@@ -2,10 +2,17 @@ package com.proyecto.minimarket.model;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import jakarta.persistence.*;
 
+@Entity
+@Table(name = "ventas")
 public class Venta {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private LocalDateTime fecha;
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "venta_id")
     private List<DetalleVenta> detalles;
     private Double total;
 

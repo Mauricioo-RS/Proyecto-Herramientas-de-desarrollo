@@ -1,10 +1,20 @@
 package com.proyecto.minimarket.model;
 
+import com.proyecto.minimarket.productos.Producto;
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "detalle_ventas")
 public class DetalleVenta {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "producto_id", nullable = false)
     private Producto producto;
     private int cantidad;
     private Double precioUnitario;
+    private Double subtotal;
 
     public DetalleVenta() {}
 
@@ -34,5 +44,10 @@ public class DetalleVenta {
     }
 
     public void setSubtotal(double subtotal) {
+        this.subtotal = subtotal;
+    }
+
+    public Double getSubtotal() {
+        return subtotal;
     }
 }
