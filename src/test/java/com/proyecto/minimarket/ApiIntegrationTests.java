@@ -55,10 +55,56 @@ class ApiIntegrationTests {
         return URI.create("http://localhost:" + port + path);
     }
 
+    @Test
+    void clientesPermiteCrearConsultarActualizarYEliminar() throws Exception {
+        String datos = """
+                {"nombre":"Cliente prueba","apellido":"Integracion","dni":"12345678",
+                 "email":"cliente@example.com","telefono":"987654321"}
+                """;
+        var creado = post("/api/v1/clientes", datos);
+        assertEquals(201, creado.statusCode(), creado.body());
+        var matcher = Pattern.compile("\"id\"\\s*:\\s*(\\d+)").matcher(creado.body());
+        assertTrue(matcher.find(), creado.body());
+        String path = "/api/v1/clientes/" + matcher.group(1);
+
+        var consulta = request("GET", path, null);
+        assertEquals(200, consulta.statusCode(), consulta.body());
+        assertTrue(consulta.body().contains("12345678"), consulta.body());
+
+        var actualizado = request("PUT", path, datos.replace("Cliente prueba", "Cliente actualizado"));
+        assertEquals(200, actualizado.statusCode(), actualizado.body());
+        var lista = request("GET", "/api/v1/clientes", null);
+        assertEquals(200, lista.statusCode(), lista.body());
+        assertTrue(lista.body().contains("Cliente actualizado"), lista.body());
+
+        var eliminado = request("DELETE", path, null);
+        assertEquals(204, eliminado.statusCode(), eliminado.body());
+        var listaFinal = request("GET", "/api/v1/clientes", null);
+        assertEquals(200, listaFinal.statusCode(), listaFinal.body());
+        assertFalse(listaFinal.body().contains("12345678"), listaFinal.body());
+    }
+
+    @Test
+    void clientesRechazaDniInvalido() throws Exception {
+        var respuesta = post("/api/v1/clientes", """
+                {"nombre":"Cliente invalido","apellido":"Prueba","dni":"abc"}
+                """);
+        assertEquals(400, respuesta.statusCode(), respuesta.body());
+        var lista = request("GET", "/api/v1/clientes", null);
+        assertEquals(200, lista.statusCode(), lista.body());
+        assertFalse(lista.body().contains("Cliente invalido"), lista.body());
+    }
+
     private HttpResponse<String> post(String path, String body) throws Exception {
+        return request("POST", path, body);
+    }
+
+    private HttpResponse<String> request(String method, String path, String body) throws Exception {
         return client.send(HttpRequest.newBuilder(uri(path))
+                .timeout(Duration.ofSeconds(15))
                 .header("Content-Type", "application/json")
-                .POST(HttpRequest.BodyPublishers.ofString(body)).build(),
+                .method(method, body == null ? HttpRequest.BodyPublishers.noBody()
+                        : HttpRequest.BodyPublishers.ofString(body)).build(),
                 HttpResponse.BodyHandlers.ofString());
     }
 }
