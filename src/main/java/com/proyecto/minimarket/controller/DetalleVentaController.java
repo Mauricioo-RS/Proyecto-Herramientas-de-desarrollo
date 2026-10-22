@@ -23,6 +23,6 @@ public class DetalleVentaController {
     // Consultar el listado de detalles registrados
     @GetMapping
     public List<DetalleVenta> listarDetalles() {
-        return detalleVentaService.listarTodos();
+        return detalleVentaService.listarDetalles();
     }
 }
