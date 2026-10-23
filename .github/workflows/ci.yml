@@ -1,0 +1,47 @@
+name: CI Minimarket
+
+on:
+  push:
+    branches: [main, develop, 'feature/**', 'release/**', 'hotfix/**']
+  pull_request:
+    branches: [main, develop, 'release/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  supabase:
+    name: Supabase (Docker)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Levantar la app con Supabase
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_DB_USERNAME: ${{ secrets.SUPABASE_DB_USERNAME }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          docker compose -f compose.supabase.yaml up -d --build --wait --wait-timeout 300
+
+      - name: Comprobar que responde la API
+        run: |
+          curl --fail --silent --output /dev/null http://127.0.0.1:8082/api/productos
+
+      - name: Mostrar logs si algo fallo
+        if: failure()
+        run: docker compose -f compose.supabase.yaml logs app
+
+      - name: Apagar los contenedores
+        if: always()
+        run: docker compose -f compose.supabase.yaml down

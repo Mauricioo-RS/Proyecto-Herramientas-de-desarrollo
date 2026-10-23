@@ -47,11 +47,7 @@ public class VentaController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> eliminarVenta(@PathVariable Long id) {
-        if (ventaService.buscarPorId(id).isPresent()) {
-            ventaService.eliminarVenta(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } else {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
+        ventaService.eliminarVenta(id);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }
