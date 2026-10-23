@@ -1,0 +1,32 @@
+
+services:
+  app:
+    build:
+      context: .
+    image: minimarket-app:supabase
+
+    environment:
+      SPRING_PROFILES_ACTIVE: supabase
+      DB_URL: ${SUPABASE_DB_URL}
+      DB_USERNAME: ${SUPABASE_DB_USERNAME}
+      DB_PASSWORD: ${SUPABASE_DB_PASSWORD}
+      JAVA_TOOL_OPTIONS: -Duser.timezone=America/Lima
+
+    ports:
+      - "127.0.0.1:8082:8080"
+
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - --output
+        - /dev/null
+        - http://localhost:8080/api/productos
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 45s
+
+    restart: unless-stopped
