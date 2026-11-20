@@ -71,13 +71,11 @@ La respuesta esperada es `HTTP 200 OK` con una lista JSON (vacía inicialmente).
 
 ### 5. Importar el Postman de la entrega
 
-**[Colección original de Postman — Minimarket - Proyecto Final](postman/Minimarket%20-%20Proyecto%20Final.postman_collection.json)**
+**[Colección de Postman — Minimarket - Proyecto Final](postman/Minimarket%20-%20Proyecto%20Final.postman_collection.json)**
 
-En Postman utiliza **Import → Files** y selecciona el JSON descargado del repositorio. La colección contiene nueve solicitudes para productos, clientes y ventas, con URLs que apuntan por defecto a `http://localhost:8081`.
+En Postman usa **Import → Files**, selecciona el JSON y abre **Run collection**. Ejecuta las cuatro carpetas en orden. La variable `baseUrl` apunta a `http://localhost:8081` para Docker. Si usas H2 con Maven, cámbiala a `http://localhost:8080`.
 
-Para hacer una prueba sencilla, abre **Listar productos → Send** y comprueba `200 OK`. Para crear registros utiliza **Registrar producto** y luego consulta o registra una venta con el ID generado por tu propia base. Los IDs `1` y `3` del archivo son ejemplos: no se garantiza que existan en otra computadora.
-
-**Revisión necesaria en la colección original:** la solicitud **Eliminar producto** tiene texto añadido al final de la URL exportada. Antes de ejecutarla, deja únicamente `http://localhost:8081/api/productos/ID` (con un ID válido), sin `Copiar URL` ni saltos de línea. Los métodos `GET` no requieren contenido en **Body**. Las peticiones `POST`, `PUT` y `DELETE` pueden modificar los datos de prueba.
+La colección crea sus propios registros, guarda los IDs devueltos por la API y comprueba los códigos HTTP, importes y cambios de stock. Al terminar elimina la venta y el cliente de prueba, y desactiva el producto. El detalle independiente se conserva. Usa una base de prueba si quieres mantener limpios tus datos habituales.
 
 ### 6. Detener el sistema sin borrar datos
 
@@ -112,10 +110,15 @@ A continuación se conservan los detalles de los módulos, las reglas de negocio
 
 ## Documentos para el equipo
 
+- [Documentación completa en Word](docs/03_Documentacion_Completa_Minimarket.docx)
+  y [versión Markdown](docs/03_Documentacion_Completa_Minimarket.md):
+  explicación detallada del avance, arquitectura y tablas, instalación en otra
+  PC, práctica de Postman, pruebas, Gitflow, workflow, problemas resueltos y
+  tareas pendientes. Incluye el estado verificado de `develop` y Actions.
 - [Avances del proyecto](https://github.com/Mauricioo-RS/Proyecto-Herramientas-de-desarrollo/blob/main/docs/01_Avances_Minimarket.docx): módulos integrados, Docker, MySQL, pruebas realizadas y funcionamiento del workflow.
 - [Pendientes para el equipo](https://github.com/Mauricioo-RS/Proyecto-Herramientas-de-desarrollo/blob/main/docs/02_Pendientes_Equipo_Minimarket.docx): reparto sugerido de tareas, puesta en marcha en otra PC, colección Postman y entrega mediante Gitflow hacia `main`.
 
-Ambos documentos corresponden a la entrega del 22 de octubre de 2026. La guía `docs/Guia_Minimarket_APIs_Postman_Docker_Gitflow.docx` se conserva como material anterior; para el estado actual utiliza los dos documentos nuevos y este README.
+Los documentos corresponden a la entrega del 22 de octubre de 2026. La guía `docs/Guia_Minimarket_APIs_Postman_Docker_Gitflow.docx` se conserva como material anterior; para el estado actual utiliza la documentación completa y este README.
 
 ## Ejecución local sin Docker (H2)
 
@@ -158,7 +161,9 @@ Ejemplo para registrar un cliente con `POST /api/v1/clientes` en Postman (Body �
 }
 ```
 
-El DNI debe tener ocho dígitos y ser único. La respuesta esperada es `201`. La actualización conserva el DNI original del cliente.
+El DNI debe tener ocho dígitos y ser único. La respuesta esperada es `201`. Al actualizar, puedes omitir el DNI o enviar el mismo valor. Un DNI diferente devuelve `400`.
+
+Un ID inexistente devuelve `404`. Un nombre de producto o DNI duplicado devuelve `409`. Los precios deben tener como máximo ocho cifras enteras y dos decimales. Tras desactivar un producto, las consultas directas devuelven `404`, los listados lo excluyen y un intento de venderlo devuelve `409`.
 
 ## Validación y flujo de trabajo
 
@@ -194,20 +199,11 @@ Con precio 5.00 y stock 30, vender dos unidades genera un total de 10.00 y deja 
 
 Las funcionalidades se integran en `develop`; la versión comprobada se lleva a `main`. Las ramas de funcionalidades anteriores se conservan como historial. Para trabajo nuevo, crea una rama desde `develop` actualizado y abre un PR hacia `develop` al terminar.
 
-El workflow `.github/workflows/ci.yml` ejecuta la verificación automática en GitHub Actions. Las pruebas actuales verifican la integración y el control de inventario, no todas las reglas de negocio del minimarket.
-
 ### Workflow de GitHub Actions
 
 `CI Minimarket` se ejecuta al subir cambios a `main`, `develop`, `feature/**`, `release/**` o `hotfix/**`, y en Pull Requests hacia `main`, `develop` y `release/**`. También admite ejecución manual cuando el workflow esté disponible en la rama predeterminada de GitHub.
 
-El job `Java 21, Docker y APIs`, en un runner Ubuntu de GitHub:
-
-1. Configura Java 21 y ejecuta `bash ./mvnw -B -ntp clean verify`.
-2. Genera claves temporales y una base MySQL propia para esa ejecución.
-3. Construye la imagen e inicia Docker Compose, esperando ambos servicios.
-4. Prueba los cuatro módulos, los cálculos de ventas y las validaciones de stock.
-5. Reinicia los contenedores y comprueba que los registros persisten.
-6. Conserva los informes, logs y JAR durante siete días y elimina sus recursos temporales.
+El job `Supabase (Docker)` ejecuta Maven durante la construcción de la imagen, levanta la aplicación con las credenciales de Supabase configuradas en GitHub Actions y comprueba que `GET /api/productos` responde. Para verificar los cuatro módulos contra MySQL, levanta el Docker Compose del inicio rápido y ejecuta la colección completa de Postman.
 
 Consulta las ejecuciones en [Actions del repositorio](https://github.com/Mauricioo-RS/Proyecto-Herramientas-de-desarrollo/actions). Para revisar un cambio, verifica tanto el nombre de la rama como el commit de la ejecución. Un resultado correcto en una rama anterior no valida cambios nuevos.
 
@@ -293,7 +289,7 @@ La API de este perfil escucha en `http://localhost:8082/api/productos`. El perfi
 
 ## Material de entrega
 
-- [Colección original de Postman](postman/Minimarket%20-%20Proyecto%20Final.postman_collection.json)
+- [Colección de Postman](postman/Minimarket%20-%20Proyecto%20Final.postman_collection.json)
 - [Avances del proyecto](docs/01_Avances_Minimarket.docx)
 - [Pendientes del equipo](docs/02_Pendientes_Equipo_Minimarket.docx)
 - [Configuración de Docker Compose](compose.yaml)

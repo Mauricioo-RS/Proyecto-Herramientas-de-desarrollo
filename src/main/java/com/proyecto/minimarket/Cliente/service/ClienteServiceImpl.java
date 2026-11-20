@@ -2,7 +2,9 @@ package com.proyecto.minimarket.Cliente.service;
 
 import com.proyecto.minimarket.Cliente.model.Cliente;
 import com.proyecto.minimarket.Cliente.repository.ClienteRepository;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -19,7 +21,7 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     public Cliente crear(Cliente cliente) {
         if (clienteRepository.existsByDni(cliente.getDni())) {
-            throw new RuntimeException("Ya existe un cliente registrado con el DNI: " + cliente.getDni());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe un cliente registrado con ese DNI.");
         }
         return clienteRepository.save(cliente);
     }
@@ -32,18 +34,20 @@ public class ClienteServiceImpl implements ClienteService {
     @Override
     public Cliente buscarPorId(Long id) {
         return clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado con id: " + id));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado."));
     }
 
     @Override
     public Cliente actualizar(Long id, Cliente clienteActualizado) {
-        Cliente cliente = buscarPorId(id); // reutiliza el método anterior, ya valida que exista
+        Cliente cliente = buscarPorId(id);
+        if (clienteActualizado.getDni() != null && !cliente.getDni().equals(clienteActualizado.getDni())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El DNI de un cliente no se puede modificar.");
+        }
 
         cliente.setNombre(clienteActualizado.getNombre());
         cliente.setApellido(clienteActualizado.getApellido());
         cliente.setEmail(clienteActualizado.getEmail());
         cliente.setTelefono(clienteActualizado.getTelefono());
-        // Nota: el DNI normalmente no se actualiza, por eso no se toca aquí
 
         return clienteRepository.save(cliente);
     }

@@ -1,10 +1,11 @@
 package com.proyecto.minimarket.productos;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @Transactional
@@ -17,6 +18,9 @@ public class ProductoService {
     }
 
     public Producto crear(Producto producto) {
+        if (producto.getId() != null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Un producto nuevo no debe incluir ID.");
+        }
         validarNombreDisponible(producto.getNombre(), null);
         return productoRepository.save(producto);
     }
@@ -34,17 +38,21 @@ public class ProductoService {
     @Transactional(readOnly = true)
     public Producto buscarPorId(Long id) {
         return productoRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("No se encontró el producto con id " + id));
+                .filter(Producto::isActivo)
+                .orElseThrow(() -> productoNoEncontrado(id));
     }
 
     @Transactional(readOnly = true)
     public Producto buscarPorNombre(String nombre) {
         return productoRepository.findByNombreIgnoreCase(nombre)
-                .orElseThrow(() -> new NoSuchElementException("No se encontró el producto " + nombre));
+                .filter(Producto::isActivo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado."));
     }
 
     public Producto actualizar(Long id, Producto datosProducto) {
-        Producto producto = buscarPorId(id);
+        Producto producto = productoRepository.buscarParaActualizarStock(id)
+                .filter(Producto::isActivo)
+                .orElseThrow(() -> productoNoEncontrado(id));
         validarNombreDisponible(datosProducto.getNombre(), id);
 
         producto.setNombre(datosProducto.getNombre());
@@ -57,16 +65,20 @@ public class ProductoService {
     }
 
     public void desactivar(Long id) {
-        Producto producto = buscarPorId(id);
+        Producto producto = productoRepository.buscarParaActualizarStock(id)
+                .orElseThrow(() -> productoNoEncontrado(id));
         producto.setActivo(false);
-        productoRepository.save(producto);
+    }
+
+    private ResponseStatusException productoNoEncontrado(Long id) {
+        return new ResponseStatusException(HttpStatus.NOT_FOUND, "No se encontró el producto con ID " + id + ".");
     }
 
     private void validarNombreDisponible(String nombre, Long idActual) {
         productoRepository.findByNombreIgnoreCase(nombre)
                 .filter(producto -> !producto.getId().equals(idActual))
                 .ifPresent(producto -> {
-                    throw new IllegalArgumentException("Ya existe un producto con el nombre " + nombre);
+                    throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe un producto con ese nombre.");
                 });
     }
 }

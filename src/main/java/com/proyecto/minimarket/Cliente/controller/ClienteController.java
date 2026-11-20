@@ -6,8 +6,10 @@ import com.proyecto.minimarket.Cliente.mapper.ClienteMapper;
 import com.proyecto.minimarket.Cliente.model.Cliente;
 import com.proyecto.minimarket.Cliente.service.ClienteService;
 import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,7 +28,8 @@ public class ClienteController {
     }
 
     @PostMapping
-    public ResponseEntity<ClienteResponseDTO> crear(@Valid @RequestBody ClienteRequestDTO dto) {
+    public ResponseEntity<ClienteResponseDTO> crear(
+            @Validated({Default.class, ClienteRequestDTO.Creacion.class}) @RequestBody ClienteRequestDTO dto) {
         Cliente cliente = clienteMapper.toEntity(dto);
         Cliente creado = clienteService.crear(cliente);
         return ResponseEntity.status(HttpStatus.CREATED).body(clienteMapper.toResponseDTO(creado));

@@ -1,243 +1,1736 @@
 {
   "info": {
-    "_postman_id": "e5ceda8a-9c36-4279-b0ed-e996ba3d12b5",
     "name": "Minimarket - Proyecto Final",
-    "description": "### Welcome to Postman! This is your first collection. \n\nCollections are your starting point for building and testing APIs. You can use this one to:\n\n• Group related requests\n• Test your API in real-world scenarios\n• Document and share your requests\n\nUpdate the name and overview whenever you’re ready to make it yours.\n\n[Learn more about Postman Collections.](https://learning.postman.com/docs/collections/collections-overview/)",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "59169528",
-    "_collection_link": "https://go.postman.co/collection/59169528-e5ceda8a-9c36-4279-b0ed-e996ba3d12b5?source=collection_link"
+    "description": "Ejecuta las carpetas en orden con Collection Runner. baseUrl usa Docker por defecto (8081). Para H2, usa el puerto 8080. Cada ejecución crea registros de prueba con identificadores únicos. Al final elimina la venta y el cliente y desactiva el producto. El detalle independiente queda registrado.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "faltanteId",
+      "value": "9223372036854775807"
+    }
+  ],
   "item": [
     {
-      "name": "Listar productos",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"nombre\": \"Arroz practica Mac\",\n  \"descripcion\": \"Bolsa de 1 kg\",\n  \"precio\": 5.00,\n  \"stock\": 30,\n  \"categoria\": \"Abarrotes\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+      "name": "Productos",
+      "item": [
+        {
+          "name": "Registrar producto",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const clave = pm.variables.replaceIn('{{$guid}}');",
+                  "const dni = String(10000000 + Math.floor(Math.random() * 90000000));",
+                  "pm.collectionVariables.set('productoNombre', 'Postman-' + clave);",
+                  "pm.collectionVariables.set('categoria', 'Prueba-' + clave);",
+                  "pm.collectionVariables.set('dni', dni);",
+                  "pm.collectionVariables.set('otroDni', dni === '99999999' ? '99999998' : '99999999');",
+                  "['productoId', 'ventaId', 'detalleId', 'clienteId'].forEach(id => pm.collectionVariables.unset(id));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Devuelve un ID', () => pm.expect(data.id).to.be.a('number').above(0));",
+                  "    pm.collectionVariables.set('productoId', String(data.id));",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.stock).to.eql(30);",
+                  "    });",
+                  "}"
+                ]
+              }
             }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{productoNombre}}\",\n  \"descripcion\": \"Prueba automatizada\",\n  \"precio\": 5,\n  \"stock\": 30,\n  \"categoria\": \"{{categoria}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/productos"
           }
         },
-        "url": {
-          "raw": "http://localhost:8081/api/productos",
-          "protocol": "http",
-          "host": [
-            "localhost"
-          ],
-          "port": "8081",
-          "path": [
-            "api",
-            "productos"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Registrar venta",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"detalles\": [\n    {\n      \"producto\": {\n        \"id\": 1\n      },\n      \"cantidad\": 2\n    }\n  ]\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+        {
+          "name": "Listar productos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.some(item => String(item.id) === pm.collectionVariables.get('productoId'))).to.be.true;",
+                  "    });",
+                  "}"
+                ]
+              }
             }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos"
           }
         },
-        "url": {
-          "raw": "http://localhost:8081/api/ventas",
-          "protocol": "http",
-          "host": [
-            "localhost"
-          ],
-          "port": "8081",
-          "path": [
-            "api",
-            "ventas"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Listar ventas",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "http://localhost:8081/api/ventas",
-          "protocol": "http",
-          "host": [
-            "localhost"
-          ],
-          "port": "8081",
-          "path": [
-            "api",
-            "ventas"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Registrar cliente",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"nombre\": \"Carlos\",\n  \"apellido\": \"Ramirez\",\n  \"dni\": \"87654321\",\n  \"email\": \"carlos.prueba@example.com\",\n  \"telefono\": \"987654321\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+        {
+          "name": "Consultar producto por ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.stock).to.eql(30);",
+                  "    });",
+                  "}"
+                ]
+              }
             }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/{{productoId}}"
           }
         },
-        "url": {
-          "raw": "http://localhost:8081/api/v1/clientes",
-          "protocol": "http",
-          "host": [
-            "localhost"
-          ],
-          "port": "8081",
-          "path": [
-            "api",
-            "v1",
-            "clientes"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Consultar producto por ID",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "http://localhost:8081/api/productos/1",
-          "protocol": "http",
-          "host": [
-            "localhost"
-          ],
-          "port": "8081",
-          "path": [
-            "api",
-            "productos",
-            "1"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Consultar cliente por ID",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "http://localhost:8081/api/v1/clientes/1",
-          "protocol": "http",
-          "host": [
-            "localhost"
-          ],
-          "port": "8081",
-          "path": [
-            "api",
-            "v1",
-            "clientes",
-            "1"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Registrar producto",
-      "request": {
-        "method": "POST",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"nombre\": \"Fideos\",\n  \"descripcion\": \"400 g\",\n  \"precio\": 4.50,\n  \"stock\": 20,\n  \"categoria\": \"Abarrotes\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+        {
+          "name": "Consultar por nombre",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.stock).to.eql(30);",
+                  "    });",
+                  "}"
+                ]
+              }
             }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/nombre/{{productoNombre}}"
           }
         },
-        "url": {
-          "raw": "http://localhost:8081/api/productos",
-          "protocol": "http",
-          "host": [
-            "localhost"
-          ],
-          "port": "8081",
-          "path": [
-            "api",
-            "productos"
-          ]
-        }
-      },
-      "response": []
-    },
-    {
-      "name": "Actualizar producto",
-      "request": {
-        "method": "PUT",
-        "header": [],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"nombre\": \"Arroz Costeño\",\n  \"descripcion\": \"Arroz extra de 1 kg\",\n  \"precio\": 5.00,\n  \"stock\": 28,\n  \"categoria\": \"Abarrotes\"\n}",
-          "options": {
-            "raw": {
-              "language": "json"
+        {
+          "name": "Listar por categoría",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.some(item => String(item.id) === pm.collectionVariables.get('productoId'))).to.be.true;",
+                  "    });",
+                  "}"
+                ]
+              }
             }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/categoria/{{categoria}}"
           }
         },
-        "url": {
-          "raw": "http://localhost:8081/api/productos/1",
-          "protocol": "http",
-          "host": [
-            "localhost"
+        {
+          "name": "Actualizar producto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.descripcion).to.eql(\"Actualizado\");",
+                  "        pm.expect(data.stock).to.eql(30);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
           ],
-          "port": "8081",
-          "path": [
-            "api",
-            "productos",
-            "1"
-          ]
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{productoNombre}}\",\n  \"descripcion\": \"Actualizado\",\n  \"precio\": 5,\n  \"stock\": 30,\n  \"categoria\": \"{{categoria}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/productos/{{productoId}}"
+          }
+        },
+        {
+          "name": "Rechazar nombre duplicado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(409);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{productoNombre}}\",\n  \"descripcion\": \"Prueba automatizada\",\n  \"precio\": 5,\n  \"stock\": 30,\n  \"categoria\": \"{{categoria}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/productos"
+          }
+        },
+        {
+          "name": "Rechazar precio negativo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(400);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{productoNombre}}\",\n  \"descripcion\": \"Prueba automatizada\",\n  \"precio\": -1,\n  \"stock\": 30,\n  \"categoria\": \"{{categoria}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/productos"
+          }
+        },
+        {
+          "name": "Rechazar precio con más de dos decimales",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(400);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{productoNombre}}\",\n  \"descripcion\": \"Prueba automatizada\",\n  \"precio\": 5.001,\n  \"stock\": 30,\n  \"categoria\": \"{{categoria}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/productos"
+          }
+        },
+        {
+          "name": "Rechazar precio fuera de rango",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(400);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{productoNombre}}\",\n  \"descripcion\": \"Prueba automatizada\",\n  \"precio\": 100000000,\n  \"stock\": 30,\n  \"categoria\": \"{{categoria}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/productos"
+          }
+        },
+        {
+          "name": "Rechazar stock negativo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(400);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{productoNombre}}\",\n  \"descripcion\": \"Prueba automatizada\",\n  \"precio\": 5,\n  \"stock\": -1,\n  \"categoria\": \"{{categoria}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/productos"
+          }
+        },
+        {
+          "name": "Consultar producto inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(404);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/{{faltanteId}}"
+          }
+        },
+        {
+          "name": "Actualizar producto inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(404);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"{{productoNombre}}\",\n  \"descripcion\": \"Prueba automatizada\",\n  \"precio\": 5,\n  \"stock\": 30,\n  \"categoria\": \"{{categoria}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/productos/{{faltanteId}}"
+          }
+        },
+        {
+          "name": "Eliminar producto inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(404);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/{{faltanteId}}"
+          }
         }
-      },
-      "response": []
+      ]
     },
     {
-      "name": "Eliminar producto",
-      "request": {
-        "method": "DELETE",
-        "header": [],
-        "url": {
-          "raw": "http://localhost:8081/api/productos/3\n Copiar URL",
-          "protocol": "http",
-          "host": [
-            "localhost"
+      "name": "Clientes",
+      "item": [
+        {
+          "name": "Registrar cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Devuelve un ID', () => pm.expect(data.id).to.be.a('number').above(0));",
+                  "    pm.collectionVariables.set('clienteId', String(data.id));",
+                  "}"
+                ]
+              }
+            }
           ],
-          "port": "8081",
-          "path": [
-            "api",
-            "productos",
-            "3\n Copiar URL"
-          ]
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carlos\",\n  \"apellido\": \"Prueba\",\n  \"dni\": \"{{dni}}\",\n  \"email\": \"cliente@example.com\",\n  \"telefono\": \"987654321\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/clientes"
+          }
+        },
+        {
+          "name": "Listar clientes",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.some(item => String(item.id) === pm.collectionVariables.get('clienteId'))).to.be.true;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/clientes"
+          }
+        },
+        {
+          "name": "Consultar cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.dni).to.eql(pm.collectionVariables.get('dni'));",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/clientes/{{clienteId}}"
+          }
+        },
+        {
+          "name": "Actualizar cliente sin enviar DNI",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.nombre).to.eql(\"Carlos actualizado\");",
+                  "        pm.expect(data.dni).to.eql(pm.collectionVariables.get('dni'));",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carlos actualizado\",\n  \"apellido\": \"Prueba\",\n  \"email\": \"nuevo@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/clientes/{{clienteId}}"
+          }
+        },
+        {
+          "name": "Rechazar cambio de DNI",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(400);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carlos\",\n  \"apellido\": \"Prueba\",\n  \"dni\": \"{{otroDni}}\",\n  \"email\": \"cliente@example.com\",\n  \"telefono\": \"987654321\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/clientes/{{clienteId}}"
+          }
+        },
+        {
+          "name": "Rechazar DNI duplicado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(409);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carlos\",\n  \"apellido\": \"Prueba\",\n  \"dni\": \"{{dni}}\",\n  \"email\": \"cliente@example.com\",\n  \"telefono\": \"987654321\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/clientes"
+          }
+        },
+        {
+          "name": "Rechazar DNI incorrecto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(400);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carlos\",\n  \"apellido\": \"Prueba\",\n  \"dni\": \"123\",\n  \"email\": \"cliente@example.com\",\n  \"telefono\": \"987654321\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/clientes"
+          }
+        },
+        {
+          "name": "Rechazar DNI faltante",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(400);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carlos\",\n  \"apellido\": \"Prueba\",\n  \"email\": \"cliente@example.com\",\n  \"telefono\": \"987654321\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/clientes"
+          }
+        },
+        {
+          "name": "Rechazar correo inválido",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(400);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carlos\",\n  \"apellido\": \"Prueba\",\n  \"dni\": \"{{dni}}\",\n  \"email\": \"correo-invalido\",\n  \"telefono\": \"987654321\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/clientes"
+          }
+        },
+        {
+          "name": "Rechazar nombre largo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(400);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"apellido\": \"Prueba\",\n  \"dni\": \"{{dni}}\",\n  \"email\": \"cliente@example.com\",\n  \"telefono\": \"987654321\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/clientes"
+          }
+        },
+        {
+          "name": "Consultar cliente inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(404);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/clientes/{{faltanteId}}"
+          }
+        },
+        {
+          "name": "Actualizar cliente inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(404);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Carlos\",\n  \"apellido\": \"Prueba\",\n  \"dni\": \"{{dni}}\",\n  \"email\": \"cliente@example.com\",\n  \"telefono\": \"987654321\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/v1/clientes/{{faltanteId}}"
+          }
+        },
+        {
+          "name": "Eliminar cliente inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(404);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/clientes/{{faltanteId}}"
+          }
+        },
+        {
+          "name": "Eliminar cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/clientes/{{clienteId}}"
+          }
+        },
+        {
+          "name": "Confirmar eliminación de cliente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(404);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/v1/clientes/{{clienteId}}"
+          }
         }
-      },
-      "response": []
+      ]
+    },
+    {
+      "name": "Ventas",
+      "item": [
+        {
+          "name": "Registrar venta de dos unidades",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "if (pm.response.code === 201) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Devuelve un ID', () => pm.expect(data.id).to.be.a('number').above(0));",
+                  "    pm.collectionVariables.set('ventaId', String(data.id));",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.total).to.eql(10);",
+                  "        pm.expect(data.detalles[0].subtotal).to.eql(10);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"detalles\": [\n    {\n      \"producto\": {\n        \"id\": {{productoId}}\n      },\n      \"cantidad\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/ventas"
+          }
+        },
+        {
+          "name": "Listar ventas",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.some(item => String(item.id) === pm.collectionVariables.get('ventaId'))).to.be.true;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/ventas"
+          }
+        },
+        {
+          "name": "Consultar venta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.total).to.eql(10);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/ventas/{{ventaId}}"
+          }
+        },
+        {
+          "name": "Confirmar descuento de stock",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.stock).to.eql(28);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/{{productoId}}"
+          }
+        },
+        {
+          "name": "Rechazar stock insuficiente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(409);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"detalles\": [\n    {\n      \"producto\": {\n        \"id\": {{productoId}}\n      },\n      \"cantidad\": 29\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/ventas"
+          }
+        },
+        {
+          "name": "Revertir una venta con detalles repetidos y stock insuficiente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(409);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"detalles\": [\n    {\n      \"producto\": {\n        \"id\": {{productoId}}\n      },\n      \"cantidad\": 15\n    },\n    {\n      \"producto\": {\n        \"id\": {{productoId}}\n      },\n      \"cantidad\": 14\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/ventas"
+          }
+        },
+        {
+          "name": "Rechazar cantidad cero",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(400);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"detalles\": [\n    {\n      \"producto\": {\n        \"id\": {{productoId}}\n      },\n      \"cantidad\": 0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/ventas"
+          }
+        },
+        {
+          "name": "Rechazar venta sin detalles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(400);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"detalles\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/ventas"
+          }
+        },
+        {
+          "name": "Rechazar venta con producto inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(404);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"detalles\": [\n    {\n      \"producto\": {\n        \"id\": {{faltanteId}}\n      },\n      \"cantidad\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/ventas"
+          }
+        },
+        {
+          "name": "Confirmar que los rechazos conservan el stock",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.stock).to.eql(28);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/{{productoId}}"
+          }
+        },
+        {
+          "name": "Eliminar venta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/ventas/{{ventaId}}"
+          }
+        },
+        {
+          "name": "Confirmar eliminación de venta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(404);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/ventas/{{ventaId}}"
+          }
+        },
+        {
+          "name": "Rechazar segunda eliminación de venta",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(404);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/ventas/{{ventaId}}"
+          }
+        },
+        {
+          "name": "Confirmar devolución de stock una sola vez",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.stock).to.eql(30);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/{{productoId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Detalles y desactivación",
+      "item": [
+        {
+          "name": "Crear detalle independiente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Devuelve un ID', () => pm.expect(data.id).to.be.a('number').above(0));",
+                  "    pm.collectionVariables.set('detalleId', String(data.id));",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.subtotal).to.eql(10);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto\": {\n    \"id\": {{productoId}}\n  },\n  \"cantidad\": 2\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/detalle-ventas"
+          }
+        },
+        {
+          "name": "Listar detalles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.some(item => String(item.id) === pm.collectionVariables.get('detalleId'))).to.be.true;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/detalle-ventas"
+          }
+        },
+        {
+          "name": "Rechazar cantidad de detalle inválida",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(400);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto\": {\n    \"id\": {{productoId}}\n  },\n  \"cantidad\": -1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/detalle-ventas"
+          }
+        },
+        {
+          "name": "Rechazar detalle de producto inexistente",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(404);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto\": {\n    \"id\": {{faltanteId}}\n  },\n  \"cantidad\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/detalle-ventas"
+          }
+        },
+        {
+          "name": "Comprobar que el detalle conserva el stock",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data.stock).to.eql(30);",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/{{productoId}}"
+          }
+        },
+        {
+          "name": "Desactivar producto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/{{productoId}}"
+          }
+        },
+        {
+          "name": "Consultar por ID un producto desactivado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(404);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/{{productoId}}"
+          }
+        },
+        {
+          "name": "Consultar por nombre un producto desactivado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(404);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/nombre/{{productoNombre}}"
+          }
+        },
+        {
+          "name": "Confirmar que no aparece por categoría",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.test('Datos esperados', () => {",
+                  "        pm.expect(data).to.be.an(\"array\").that.is.empty;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/categoria/{{categoria}}"
+          }
+        },
+        {
+          "name": "Rechazar venta de producto desactivado",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('Error con detalle', () => {",
+                  "    const error = pm.response.json();",
+                  "    pm.expect(error.status).to.eql(409);",
+                  "    pm.expect(error.detail).to.be.a('string').and.not.be.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"detalles\": [\n    {\n      \"producto\": {\n        \"id\": {{productoId}}\n      },\n      \"cantidad\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": "{{baseUrl}}/api/ventas"
+          }
+        },
+        {
+          "name": "Repetir desactivación de producto",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/productos/{{productoId}}"
+          }
+        }
+      ]
     }
   ]
 }

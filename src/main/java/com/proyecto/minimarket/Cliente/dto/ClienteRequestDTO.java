@@ -4,17 +4,22 @@ import jakarta.validation.constraints.*;
 
 public class ClienteRequestDTO {
 
+    public interface Creacion {}
+
     @NotBlank(message = "El nombre es obligatorio")
+    @Size(max = 100, message = "El nombre admite hasta 100 caracteres")
     private String nombre;
 
     @NotBlank(message = "El apellido es obligatorio")
+    @Size(max = 100, message = "El apellido admite hasta 100 caracteres")
     private String apellido;
 
-    @NotBlank(message = "El DNI es obligatorio")
+    @NotBlank(groups = Creacion.class, message = "El DNI es obligatorio")
     @Pattern(regexp = "\\d{8}", message = "El DNI debe tener 8 dígitos")
     private String dni;
 
     @Email(message = "El correo no tiene un formato válido")
+    @Size(max = 150, message = "El correo admite hasta 150 caracteres")
     private String email;
 
     @Pattern(regexp = "\\d{9}", message = "El teléfono debe tener 9 dígitos")
