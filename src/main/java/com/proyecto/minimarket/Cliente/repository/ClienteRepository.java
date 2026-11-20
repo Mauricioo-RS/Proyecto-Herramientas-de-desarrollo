@@ -9,9 +9,11 @@ import java.util.Optional;
 @Repository
 public interface ClienteRepository extends JpaRepository<Cliente, Long> {
 
-    // Busca un cliente por su DNI
     Optional<Cliente> findByDni(String dni);
 
-    // Verifica si ya existe un cliente con ese DNI
     boolean existsByDni(String dni);
+
+    boolean existsByEmailIgnoreCase(String email);
+
+    boolean existsByEmailIgnoreCaseAndIdNot(String email, Long id);
 }
